@@ -75,6 +75,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;touch-action:no
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="err" style="display:none;position:fixed;top:0;left:0;right:0;background:rgba(200,0,0,0.95);color:#fff;font-size:12px;font-family:monospace;padding:8px;z-index:9999;word-break:break-all"></div><script>window.onerror=function(m,u,l){var d=document.getElementById("err");if(d){d.style.display="block";d.innerHTML+="ERR:"+m+" L"+l+"<br>";}};window.addEventListener("unhandledrejection",function(e){var d=document.getElementById("err");if(d){d.style.display="block";d.innerHTML+="PROMISE:"+e.reason+"<br>";}});</script>
 <div id="ctrlbar">
   <div id="dpad">
     <div id="dpad-h"><div class="dpad-arm" id="btn-left"></div><div class="dpad-arm" id="btn-right"></div></div>
