@@ -1974,7 +1974,7 @@ function drawDeadScene() {
   drawPlayer(getPlayerScreenX());
 }
 
-loop();
+
 
 
 // ============================================================
@@ -3380,6 +3380,9 @@ function drawBoss2ReturnDialog() {
   }
 }
 
+
+// Start game loop after all variables are declared
+setTimeout(loop, 0);
 </script>
 </body>
 </html>
