@@ -12,64 +12,87 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 
-/* Canvas stays at 320x224 — CSS transform handles scaling */
+/* Canvas: always 320x224, CSS scale fills screen, centered */
 #c{
   display:block;
   width:320px; height:224px;
   image-rendering:pixelated;
   image-rendering:crisp-edges;
   position:fixed;
-  top:0; left:50%;
-  transform-origin:top center;
-  /* JS will set transform:translateX(-50%) scale(N) */
+  top:50%; left:50%;
+  transform-origin:center center;
+  /* scaleCanvas() sets transform */
 }
 
-/* Control bar pinned to bottom */
+/* Controls float OVER the game canvas */
 #ctrlbar{
-  position:fixed;bottom:0;left:0;right:0;
-  height:160px;
-  padding:0 18px;
-  padding-bottom:env(safe-area-inset-bottom,6px);
-  background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0) 100%);
-  display:flex;align-items:center;justify-content:space-between;
-  z-index:999;
+  position:fixed; bottom:0; left:0; right:0; top:0;
+  pointer-events:none;
+  z-index:100;
 }
 
-/* ── Cross D-Pad ── */
-#dpad{width:156px;height:156px;position:relative;flex-shrink:0}
-#dpad-h{position:absolute;top:50%;left:0;transform:translateY(-50%);width:100%;height:52px;display:flex;background:linear-gradient(180deg,#2a2a2a,#111);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.10);overflow:hidden}
-#dpad-v{position:absolute;left:50%;top:0;transform:translateX(-50%);width:52px;height:100%;display:flex;flex-direction:column;background:linear-gradient(90deg,#2a2a2a,#111);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.10);overflow:hidden}
-#dpad-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a3a3a,#111);border:1.5px solid rgba(255,255,255,0.12);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.9)}
+/* D-Pad — bottom left */
+#dpad{
+  position:absolute;
+  bottom:18px; left:18px;
+  width:150px; height:150px;
+  pointer-events:all;
+}
+#dpad-h{position:absolute;top:50%;left:0;transform:translateY(-50%);width:100%;height:50px;display:flex;background:linear-gradient(180deg,#2a2a2a,#111);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);overflow:hidden}
+#dpad-v{position:absolute;left:50%;top:0;transform:translateX(-50%);width:50px;height:100%;display:flex;flex-direction:column;background:linear-gradient(90deg,#2a2a2a,#111);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);overflow:hidden}
+#dpad-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a3a3a,#111);border:1.5px solid rgba(255,255,255,0.14);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.9)}
 .dpad-arm{flex:1;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
-.dpad-arm::after{content:'';position:absolute;width:12px;height:12px;border-left:3px solid rgba(255,255,255,0.45);border-bottom:3px solid rgba(255,255,255,0.45)}
+.dpad-arm::after{content:'';position:absolute;width:13px;height:13px;border-left:3px solid rgba(255,255,255,0.5);border-bottom:3px solid rgba(255,255,255,0.5)}
 #btn-left::after{transform:rotate(45deg)}
 #btn-right::after{transform:rotate(-135deg)}
 #btn-up::after{transform:rotate(135deg)}
 #btn-down::after{transform:rotate(-45deg)}
-.dpad-arm.on{background:rgba(255,215,0,0.22)!important}
-.dpad-arm.on::after{border-color:rgba(255,215,0,0.9)!important}
+.dpad-arm.on{background:rgba(255,215,0,0.25)!important}
+.dpad-arm.on::after{border-color:rgba(255,215,0,0.95)!important}
 
-/* ── Start button ── */
-#centerbtn{display:flex;align-items:center;justify-content:center}
-#btn-start{width:62px;height:26px;border-radius:13px;background:linear-gradient(180deg,#2a2a2a,#111);border:1.5px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.6);font-size:8px;font-weight:900;font-family:'Courier New',monospace;letter-spacing:2px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.7)}
-#btn-start.on{background:linear-gradient(180deg,#4a3800,#221b00);border-color:rgba(255,215,0,0.5);color:rgba(255,215,0,0.9)}
+/* Start button — bottom center */
+#centerbtn{
+  position:absolute;
+  bottom:22px; left:50%; transform:translateX(-50%);
+  pointer-events:all;
+}
+#btn-start{
+  width:68px; height:28px; border-radius:14px;
+  background:linear-gradient(180deg,rgba(40,40,40,0.85),rgba(10,10,10,0.85));
+  border:1.5px solid rgba(255,255,255,0.22);
+  color:rgba(255,255,255,0.65); font-size:8px; font-weight:900;
+  font-family:'Courier New',monospace; letter-spacing:2px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.8);
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+#btn-start.on{background:rgba(60,45,0,0.9);border-color:rgba(255,215,0,0.6);color:rgba(255,215,0,0.95)}
 
-/* ── Action buttons ── */
-#actionbtns{display:flex;gap:14px;align-items:center;flex-shrink:0}
-.act{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;font-family:'Courier New',monospace;color:#fff;position:relative;border:none}
-.act::after{content:'';position:absolute;top:6px;left:14px;width:44px;height:20px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,0.22),transparent);pointer-events:none}
-#btn-jump{background:radial-gradient(circle at 40% 35%,#1a6aff,#003ab0);box-shadow:0 4px 18px rgba(0,80,255,0.5),inset 0 1px 0 rgba(255,255,255,0.15),0 6px 0 #001e6e;outline:1.5px solid rgba(100,160,255,0.5)}
-#btn-punch{background:radial-gradient(circle at 40% 35%,#ff3a1a,#a01000);box-shadow:0 4px 18px rgba(255,60,0,0.5),inset 0 1px 0 rgba(255,255,255,0.15),0 6px 0 #5a0800;outline:1.5px solid rgba(255,100,80,0.5)}
-.act.on{transform:translateY(3px);filter:brightness(1.4);box-shadow:none!important}
+/* Action buttons — bottom right */
+#actionbtns{
+  position:absolute;
+  bottom:18px; right:18px;
+  display:flex; gap:16px; align-items:flex-end;
+  pointer-events:all;
+}
+.act{
+  width:76px; height:76px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:900;
+  font-family:'Courier New',monospace; color:#fff;
+  position:relative; border:none;
+}
+.act::after{content:'';position:absolute;top:7px;left:15px;width:46px;height:22px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,0.25),transparent);pointer-events:none}
+#btn-jump{background:radial-gradient(circle at 40% 35%,#1a6aff,#003ab0);box-shadow:0 5px 20px rgba(0,80,255,0.55),inset 0 1px 0 rgba(255,255,255,0.18),0 7px 0 #001e6e;outline:1.5px solid rgba(100,160,255,0.55)}
+#btn-punch{background:radial-gradient(circle at 40% 35%,#ff3a1a,#a01000);box-shadow:0 5px 20px rgba(255,60,0,0.55),inset 0 1px 0 rgba(255,255,255,0.18),0 7px 0 #5a0800;outline:1.5px solid rgba(255,100,80,0.55);font-size:11px}
+.act.on{transform:translateY(4px);filter:brightness(1.5);box-shadow:none!important;outline:none!important}
 
-@media(orientation:landscape){
-  #c{top:50%;transform-origin:center left}
-  #ctrlbar{top:0;height:100%;background:none;pointer-events:none;padding:0 10px}
-  #dpad{pointer-events:all;width:130px;height:130px}
+/* Portrait: smaller controls */
+@media(orientation:portrait){
+  #dpad{width:130px;height:130px;bottom:14px;left:14px}
   #dpad-h{height:44px}#dpad-v{width:44px}#dpad-center{width:44px;height:44px}
-  #centerbtn{pointer-events:all;position:absolute;bottom:14px;left:50%;transform:translateX(-50%)}
-  #actionbtns{pointer-events:all}
-  .act{width:64px;height:64px}
+  .act{width:68px;height:68px}
+  #actionbtns{bottom:14px;right:14px;gap:12px}
 }
 </style>
 </head>
@@ -107,24 +130,9 @@ canvas.width  = GW;
 canvas.height = GH;
 var SCALE = 1;
 function scaleCanvas() {
-  var ctrlH = window.innerWidth > window.innerHeight ? 0 : 160;
-  var availW = window.innerWidth;
-  var availH = window.innerHeight - ctrlH;
-  var sc = Math.min(availW / GW, availH / GH);
+  var sc = Math.min(window.innerWidth / GW, window.innerHeight / GH);
   SCALE = sc;
-  if (window.innerWidth > window.innerHeight) {
-    // landscape: center vertically on left side
-    canvas.style.transform = 'translateY(-50%) scale(' + sc + ')';
-    canvas.style.top  = '50%';
-    canvas.style.left = '0';
-    canvas.style.transformOrigin = 'top left';
-  } else {
-    // portrait: center horizontally at top
-    canvas.style.transform = 'translateX(-50%) scale(' + sc + ')';
-    canvas.style.top  = '0';
-    canvas.style.left = '50%';
-    canvas.style.transformOrigin = 'top center';
-  }
+  canvas.style.transform = 'translate(-50%, -50%) scale(' + sc + ')';
 }
 scaleCanvas();
 window.addEventListener('resize', scaleCanvas);
