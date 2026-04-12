@@ -1,0 +1,671 @@
+// TableTurn AI - Production Prisma 7 Schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  MARKETING_MANAGER
+  EVENT_MANAGER
+  VIEWER
+}
+
+enum Plan {
+  FREE
+  STARTER
+  GROWTH
+  PRO
+  ENTERPRISE
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum CampaignType {
+  EMAIL
+  SMS
+}
+
+enum LeadType {
+  RESERVATION_INTEREST
+  BIRTHDAY_DINNER
+  ANNIVERSARY
+  LARGE_PARTY
+  PRIVATE_DINING
+  CATERING
+  CORPORATE_DINNER
+  GIFT_CARD
+  GENERAL_INQUIRY
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  ENGAGED
+  BOOKED
+  LOST
+  DO_NOT_CONTACT
+}
+
+enum EventStage {
+  NEW_INQUIRY
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATING
+  BOOKED
+  LOST
+}
+
+enum ImportStatus {
+  PENDING
+  MAPPING
+  PREVIEW
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─────────────────────────────────────────────
+// Core Models
+// ─────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  logoUrl   String?
+  website   String?
+  phone     String?
+  address   String?
+  timezone  String   @default("America/New_York")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  locations            Location[]
+  users                User[]
+  contacts             Contact[]
+  tags                 Tag[]
+  segments             Segment[]
+  campaigns            Campaign[]
+  templates            Template[]
+  leads                Lead[]
+  privateEventInquiries PrivateEventInquiry[]
+  integrationConnections IntegrationConnection[]
+  importJobs           ImportJob[]
+  suppressionEntries   SuppressionEntry[]
+  activityLogs         ActivityLog[]
+  socialAdMetrics      SocialAdMetric[]
+  socialPostMetrics    SocialPostMetric[]
+
+  @@map("organizations")
+}
+
+model Location {
+  id                  String  @id @default(cuid())
+  organizationId      String
+  name                String
+  concept             String?
+  cuisine             String?
+  address             String?
+  phone               String?
+  website             String?
+  reservationLink     String?
+  privateEventsLink   String?
+  giftCardLink        String?
+  instagramHandle     String?
+  facebookHandle      String?
+  tiktokHandle        String?
+  voiceTone           String?
+  archetype           String?
+  isActive            Boolean @default(true)
+
+  // Relations
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts              Contact[]
+  campaigns             Campaign[]
+  leads                 Lead[]
+  privateEventInquiries PrivateEventInquiry[]
+
+  @@map("locations")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  email          String    @unique
+  passwordHash   String
+  role           UserRole  @default(VIEWER)
+  avatarUrl      String?
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaigns             Campaign[]            @relation("CampaignCreatedBy")
+  assignedLeads         Lead[]                @relation("LeadAssignedTo")
+  assignedEvents        PrivateEventInquiry[] @relation("EventAssignedTo")
+  activityLogs          ActivityLog[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Contacts & Segmentation
+// ─────────────────────────────────────────────
+
+model Contact {
+  id             String    @id @default(cuid())
+  organizationId String
+  locationId     String?
+  firstName      String
+  lastName       String?
+  email          String?
+  phone          String?
+  company        String?
+  birthday       DateTime?
+  anniversary    DateTime?
+  lastVisitDate  DateTime?
+  visitFrequency Int?      @default(0)
+  source         String?
+  notes          String?
+  isSubscribed   Boolean   @default(true)
+  isSuppressed   Boolean   @default(false)
+  emailValid     Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location           Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  contactTags        ContactTag[]
+  campaignRecipients CampaignRecipient[]
+  sourceAttribution  SourceAttribution?
+
+  @@index([organizationId, email])
+  @@index([organizationId, locationId])
+  @@map("contacts")
+}
+
+model Tag {
+  id             String @id @default(cuid())
+  organizationId String
+  name           String
+  color          String @default("#6366f1")
+  createdAt      DateTime @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactTags  ContactTag[]
+
+  @@unique([organizationId, name])
+  @@map("tags")
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@map("contact_tags")
+}
+
+model Segment {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  filters        Json     @default("{}")
+  contactCount   Int      @default(0)
+  isStatic       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaigns    Campaign[]
+
+  @@map("segments")
+}
+
+// ─────────────────────────────────────────────
+// Campaigns
+// ─────────────────────────────────────────────
+
+model Campaign {
+  id                  String         @id @default(cuid())
+  organizationId      String
+  locationId          String?
+  segmentId           String?
+  createdById         String?
+  name                String
+  subject             String?
+  previewText         String?
+  bodyHtml            String?
+  bodyText            String?
+  status              CampaignStatus @default(DRAFT)
+  type                CampaignType   @default(EMAIL)
+  objective           String?
+  offer               String?
+  ctaText             String?
+  ctaUrl              String?
+  scheduledAt         DateTime?
+  sentAt              DateTime?
+  fromName            String?
+  fromEmail           String?
+  replyTo             String?
+  aiGenerated         Boolean        @default(false)
+  tonePreset          String?
+  notes               String?
+  totalSent           Int            @default(0)
+  totalOpened         Int            @default(0)
+  totalClicked        Int            @default(0)
+  totalBounced        Int            @default(0)
+  totalUnsubscribed   Int            @default(0)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Relations
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  segment      Segment?           @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  createdBy    User?              @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  recipients   CampaignRecipient[]
+  sendJobs     SendJob[]
+
+  @@index([organizationId, status])
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id          String    @id @default(cuid())
+  campaignId  String
+  contactId   String
+  status      String    @default("PENDING")
+  sentAt      DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  bouncedAt   DateTime?
+  errorMsg    String?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@map("campaign_recipients")
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  subject        String?
+  bodyHtml       String?
+  bodyText       String?
+  category       String?
+  tonePreset     String?
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("templates")
+}
+
+// ─────────────────────────────────────────────
+// Leads
+// ─────────────────────────────────────────────
+
+model Lead {
+  id               String      @id @default(cuid())
+  organizationId   String
+  locationId       String?
+  assignedToId     String?
+  firstName        String
+  lastName         String?
+  email            String?
+  phone            String?
+  company          String?
+  type             LeadType    @default(GENERAL_INQUIRY)
+  status           LeadStatus  @default(NEW)
+  source           String?
+  sourcePlatform   String?
+  sourceCampaign   String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  notes            String?
+  aiSummary        String?
+  nextAction       String?
+  partySize        Int?
+  estimatedValue   Decimal?    @db.Decimal(10, 2)
+  preferredDate    DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  assignedTo   User?          @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  activities   LeadActivity[]
+  sourceAttribution SourceAttribution?
+
+  @@index([organizationId, status])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String
+  content   String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activities")
+}
+
+// ─────────────────────────────────────────────
+// Private Events
+// ─────────────────────────────────────────────
+
+model PrivateEventInquiry {
+  id               String     @id @default(cuid())
+  organizationId   String
+  locationId       String?
+  assignedToId     String?
+  contactName      String
+  company          String?
+  email            String?
+  phone            String?
+  occasion         String?
+  requestedDate    DateTime?
+  flexibleDates    Boolean    @default(false)
+  partySize        Int?
+  budgetMin        Decimal?   @db.Decimal(10, 2)
+  budgetMax        Decimal?   @db.Decimal(10, 2)
+  estimatedValue   Decimal?   @db.Decimal(10, 2)
+  preferredFormat  String?
+  foodBevNeeds     String?
+  notes            String?
+  stage            EventStage @default(NEW_INQUIRY)
+  source           String?
+  sourcePlatform   String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  aiSummary        String?
+  nextAction       String?
+  lostReason       String?
+  bookedAt         DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  // Relations
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  assignedTo   User?           @relation("EventAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  activities   EventActivity[]
+
+  @@index([organizationId, stage])
+  @@map("private_event_inquiries")
+}
+
+model EventActivity {
+  id        String   @id @default(cuid())
+  eventId   String
+  type      String
+  content   String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  event PrivateEventInquiry @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_activities")
+}
+
+// ─────────────────────────────────────────────
+// Integrations & Jobs
+// ─────────────────────────────────────────────
+
+model IntegrationConnection {
+  id             String    @id @default(cuid())
+  organizationId String
+  provider       String
+  accountId      String
+  accountName    String?
+  accountEmail   String?
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiry    DateTime?
+  scopes         String[]
+  status         String    @default("ACTIVE")
+  lastSyncAt     DateTime?
+  syncError      String?
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sendJobs     SendJob[]
+
+  @@unique([organizationId, provider, accountId])
+  @@map("integration_connections")
+}
+
+model ImportJob {
+  id              String       @id @default(cuid())
+  organizationId  String
+  filename        String
+  status          ImportStatus @default(PENDING)
+  totalRows       Int          @default(0)
+  processedRows   Int          @default(0)
+  successRows     Int          @default(0)
+  errorRows       Int          @default(0)
+  duplicateRows   Int          @default(0)
+  columnMapping   Json         @default("{}")
+  errors          Json         @default("[]")
+  tags            String[]
+  source          String?
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("import_jobs")
+}
+
+model SendJob {
+  id               String    @id @default(cuid())
+  campaignId       String
+  status           String    @default("PENDING")
+  totalRecipients  Int       @default(0)
+  sentCount        Int       @default(0)
+  failedCount      Int       @default(0)
+  integrationId    String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  errorMsg         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  campaign    Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  integration IntegrationConnection? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+
+  @@map("send_jobs")
+}
+
+// ─────────────────────────────────────────────
+// Compliance & Attribution
+// ─────────────────────────────────────────────
+
+model SuppressionEntry {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@map("suppression_entries")
+}
+
+model SourceAttribution {
+  id               String  @id @default(cuid())
+  contactId        String? @unique
+  leadId           String? @unique
+  originalSource   String?
+  sourcePlatform   String?
+  sourceCampaign   String?
+  sourceAdSet      String?
+  sourceCreative   String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  utmContent       String?
+  landingPage      String?
+  referrer         String?
+  importSource     String?
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("source_attributions")
+}
+
+// ─────────────────────────────────────────────
+// Audit & Analytics
+// ─────────────────────────────────────────────
+
+model ActivityLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String
+  entity         String?
+  entityId       String?
+  details        Json     @default("{}")
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, entity, entityId])
+  @@map("activity_logs")
+}
+
+model SocialAdMetric {
+  id                       String   @id @default(cuid())
+  organizationId           String
+  platform                 String
+  accountId                String?
+  accountName              String?
+  campaignId               String?
+  campaignName             String?
+  adSetId                  String?
+  adSetName                String?
+  creativeId               String?
+  creativeName             String?
+  dateStart                DateTime
+  dateEnd                  DateTime
+  spend                    Decimal  @default(0) @db.Decimal(10, 2)
+  impressions              Int      @default(0)
+  reach                    Int      @default(0)
+  clicks                   Int      @default(0)
+  landingPageViews         Int      @default(0)
+  ctr                      Decimal  @default(0) @db.Decimal(8, 4)
+  cpc                      Decimal  @default(0) @db.Decimal(8, 4)
+  cpm                      Decimal  @default(0) @db.Decimal(8, 4)
+  reservationClicks        Int      @default(0)
+  privateEventClicks       Int      @default(0)
+  giftCardClicks           Int      @default(0)
+  menuClicks               Int      @default(0)
+  directionsClicks         Int      @default(0)
+  callClicks               Int      @default(0)
+  emailCaptures            Int      @default(0)
+  leadFormStarts           Int      @default(0)
+  leadFormCompletions      Int      @default(0)
+  costPerLead              Decimal  @default(0) @db.Decimal(10, 2)
+  costPerReservation       Decimal  @default(0) @db.Decimal(10, 2)
+  costPerPrivateEvent      Decimal  @default(0) @db.Decimal(10, 2)
+  estimatedAttributed      Decimal  @default(0) @db.Decimal(10, 2)
+  notes                    String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, platform, dateStart])
+  @@map("social_ad_metrics")
+}
+
+model SocialPostMetric {
+  id                   String   @id @default(cuid())
+  organizationId       String
+  platform             String
+  accountHandle        String?
+  postId               String?
+  postUrl              String?
+  postDate             DateTime
+  postType             String?
+  caption              String?
+  contentTheme         String?
+  impressions          Int      @default(0)
+  reach                Int      @default(0)
+  views                Int      @default(0)
+  watchTime            Decimal  @default(0) @db.Decimal(10, 2)
+  avgViewDuration      Decimal  @default(0) @db.Decimal(8, 2)
+  engagedViews         Int      @default(0)
+  likes                Int      @default(0)
+  comments             Int      @default(0)
+  shares               Int      @default(0)
+  saves                Int      @default(0)
+  profileVisits        Int      @default(0)
+  linkClicks           Int      @default(0)
+  bioLinkClicks        Int      @default(0)
+  reservationClicks    Int      @default(0)
+  privateEventClicks   Int      @default(0)
+  followerChange       Int      @default(0)
+  engagementRate       Decimal  @default(0) @db.Decimal(8, 4)
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, platform, postDate])
+  @@map("social_post_metrics")
+}
