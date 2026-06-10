@@ -1,0 +1,12 @@
+{
+  "name": "rhythm-cockpit",
+  "version": "0.1.0",
+  "description": "Operations cockpit for Rhythm — seed data, types, and dashboard",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
