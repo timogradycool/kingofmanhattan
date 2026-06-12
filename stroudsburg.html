@@ -530,7 +530,7 @@ function onTouchMove(e){
   if(joyId!==null||lookId!==null)e.preventDefault();
 }
 function onTouchEnd(e){for(const t of e.changedTouches){if(t.identifier===joyId)joyEnd();if(t.identifier===lookId)lookId=null;}}
-canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+window.addEventListener('touchstart',onTouchStart,{passive:false});
 addEventListener('touchmove',onTouchMove,{passive:false});
 addEventListener('touchend',onTouchEnd);addEventListener('touchcancel',onTouchEnd);
 
