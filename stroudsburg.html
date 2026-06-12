@@ -27,12 +27,20 @@ html,body{width:100%;height:100%;background:#0a0a12;overflow:hidden;touch-action
 #toast{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) scale(.8);font-size:34px;font-weight:900;font-style:italic;color:#fff;text-shadow:0 0 12px #ff7a18,0 4px 10px #000;opacity:0;transition:all .25s;text-align:center;white-space:nowrap;letter-spacing:1px}
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
-/* ---------- Joystick ---------- */
-#joy{position:absolute;bottom:max(34px,env(safe-area-inset-bottom));left:30px;width:138px;height:138px;border-radius:50%;
-  background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.10),rgba(0,0,0,.28));border:2px solid rgba(255,255,255,.22);
-  pointer-events:all;box-shadow:0 6px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.15)}
-#knob{position:absolute;top:50%;left:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
-  background:radial-gradient(circle at 40% 35%,#fafafa,#b8b8b8);border:2px solid rgba(255,255,255,.6);box-shadow:0 4px 14px rgba(0,0,0,.6)}
+/* ---------- D-Pad ---------- */
+#dpad{position:absolute;bottom:max(26px,env(safe-area-inset-bottom));left:22px;width:174px;height:174px;pointer-events:none}
+.dbtn{position:absolute;width:58px;height:58px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;color:#fff;pointer-events:all;
+  background:linear-gradient(180deg,rgba(64,64,72,.94),rgba(18,18,24,.94));
+  border:2px solid rgba(255,255,255,.28);border-radius:15px;
+  box-shadow:0 4px 14px rgba(0,0,0,.55),inset 0 2px 5px rgba(255,255,255,.18);
+  text-shadow:0 1px 3px rgba(0,0,0,.7);transition:transform .05s,filter .05s}
+.dbtn.on{background:linear-gradient(180deg,#ffd23f,#ff8a2b);color:#2a0d00;transform:scale(.93);border-color:#fff}
+#dUp{top:0;left:58px}
+#dLeft{top:58px;left:0}
+#dRight{top:58px;left:116px}
+#dDown{top:116px;left:58px}
+#dpad .hubcap{position:absolute;top:58px;left:58px;width:58px;height:58px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
 
 /* ---------- Action buttons ---------- */
 #actions{position:absolute;bottom:max(40px,env(safe-area-inset-bottom));right:24px;display:flex;align-items:flex-end;gap:16px;pointer-events:none}
@@ -79,7 +87,13 @@ h1.title{font-size:clamp(34px,11vw,72px);font-weight:900;font-style:italic;line-
     </div>
   </div>
   <div id="toast"></div>
-  <div id="joy"><div id="knob"></div></div>
+  <div id="dpad">
+    <div class="hubcap"></div>
+    <div class="dbtn" id="dUp">▲</div>
+    <div class="dbtn" id="dLeft">◀</div>
+    <div class="dbtn" id="dRight">▶</div>
+    <div class="dbtn" id="dDown">▼</div>
+  </div>
   <div id="actions">
     <div id="btnRun" class="btn">RUN<small>HOLD</small></div>
     <div id="btnKick" class="btn">KICK<small>MAYHEM</small></div>
@@ -94,7 +108,7 @@ h1.title{font-size:clamp(34px,11vw,72px);font-weight:900;font-style:italic;line-
   <div class="poster" style="color:#5ad1ff;margin-top:8px">★ MISCHIEF MODE ★</div>
   <p class="sub">You're The Beacher, loose in downtown Stroudsburg. Kick trash cans, spook the townsfolk, and rack up MAYHEM. Fill the CHAOS meter to earn ⭐ WANTED stars — but the cops <i>will</i> come for you. Don't get BUSTED.</p>
   <button class="btnBig" id="playBtn">▶ PLAY NOW</button>
-  <p class="hint">📱 <b>Left thumb</b> = move &nbsp;·&nbsp; <b>Drag right side</b> = look around<br><b>RUN</b> to sprint &nbsp;·&nbsp; <b>KICK</b> near people & props for mayhem<br><span style="opacity:.7">Desktop: <span class="kbd">W A S D</span> move · <span class="kbd">Shift</span> run · <span class="kbd">Space</span> kick · drag mouse to look</span></p>
+  <p class="hint">📱 <b>D-Pad</b> (bottom-left) = move &nbsp;·&nbsp; <b>Drag screen</b> = look around<br><b>RUN</b> to sprint &nbsp;·&nbsp; <b>KICK</b> near people & props for mayhem<br><span style="opacity:.7">Desktop: <span class="kbd">W A S D</span> move · <span class="kbd">Shift</span> run · <span class="kbd">Space</span> kick · drag mouse to look</span></p>
 </div>
 
 <!-- Busted -->
@@ -502,34 +516,38 @@ const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){input.kick=true;}});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')input.kick=false;});
 
-// joystick
-const joy=document.getElementById('joy'),knob=document.getElementById('knob');
-let joyId=null,joyCx=0,joyCy=0,joyR=52;
-function joyStart(id,x,y){joyId=id;const r=joy.getBoundingClientRect();joyCx=r.left+r.width/2;joyCy=r.top+r.height/2;joyMove(x,y);}
-function joyMove(x,y){let dx=x-joyCx,dy=y-joyCy;const d=Math.hypot(dx,dy);if(d>joyR){dx*=joyR/d;dy*=joyR/d;}
-  knob.style.transform='translate('+dx+'px,'+dy+'px)';input.mx=dx/joyR;input.my=dy/joyR;}
-function joyEnd(){joyId=null;knob.style.transform='translate(0,0)';input.mx=0;input.my=0;}
+// D-pad movement: each button has its own direct listener (no hit-testing)
+const dir={up:false,down:false,left:false,right:false};
+function bindHold(id,on,off){
+  const el=document.getElementById(id);
+  const press=e=>{if(e.cancelable)e.preventDefault();e.stopPropagation();on();el.classList.add('on');};
+  const release=e=>{if(e&&e.cancelable)e.preventDefault();off();el.classList.remove('on');};
+  el.addEventListener('touchstart',press,{passive:false});
+  el.addEventListener('touchend',release,{passive:false});
+  el.addEventListener('touchcancel',release,{passive:false});
+  el.addEventListener('mousedown',press);el.addEventListener('mouseup',release);el.addEventListener('mouseleave',release);
+}
+bindHold('dUp',()=>dir.up=true,()=>dir.up=false);
+bindHold('dDown',()=>dir.down=true,()=>dir.down=false);
+bindHold('dLeft',()=>dir.left=true,()=>dir.left=false);
+bindHold('dRight',()=>dir.right=true,()=>dir.right=false);
 
-// camera look
+// camera look — drag anywhere on the 3D view that isn't a control button
 let lookId=null,lookX=0,lookY=0;
 const cam={yaw:Math.PI,pitch:0.32,dist:13};
-
+function isControl(x,y){const el=document.elementFromPoint(x,y);return el&&el!==canvas;}
 function onTouchStart(e){
   for(const t of e.changedTouches){
-    const x=t.clientX,y=t.clientY;
-    if(joy.contains(document.elementFromPoint(x,y))&&joyId===null){joyStart(t.identifier,x,y);}
-    else if(x>innerWidth*0.42&&lookId===null && !isBtn(x,y)){lookId=t.identifier;lookX=x;lookY=y;}
+    if(lookId===null && !isControl(t.clientX,t.clientY)){lookId=t.identifier;lookX=t.clientX;lookY=t.clientY;}
   }
 }
-function isBtn(x,y){const el=document.elementFromPoint(x,y);return el&&el.classList&&el.classList.contains('btn');}
 function onTouchMove(e){
   for(const t of e.changedTouches){
-    if(t.identifier===joyId)joyMove(t.clientX,t.clientY);
-    else if(t.identifier===lookId){cam.yaw-=(t.clientX-lookX)*0.006;cam.pitch=clamp(cam.pitch-(t.clientY-lookY)*0.005,-0.15,0.85);lookX=t.clientX;lookY=t.clientY;}
+    if(t.identifier===lookId){cam.yaw-=(t.clientX-lookX)*0.006;cam.pitch=clamp(cam.pitch-(t.clientY-lookY)*0.005,-0.15,0.85);lookX=t.clientX;lookY=t.clientY;}
   }
-  if(joyId!==null||lookId!==null)e.preventDefault();
+  if(lookId!==null)e.preventDefault();
 }
-function onTouchEnd(e){for(const t of e.changedTouches){if(t.identifier===joyId)joyEnd();if(t.identifier===lookId)lookId=null;}}
+function onTouchEnd(e){for(const t of e.changedTouches){if(t.identifier===lookId)lookId=null;}}
 window.addEventListener('touchstart',onTouchStart,{passive:false});
 addEventListener('touchmove',onTouchMove,{passive:false});
 addEventListener('touchend',onTouchEnd);addEventListener('touchcancel',onTouchEnd);
@@ -631,7 +649,7 @@ function update(dt){
   if(keys['KeyA']||keys['ArrowLeft'])kx-=1;
   if(keys['KeyD']||keys['ArrowRight'])kx+=1;
   if(keys['ShiftLeft']||keys['ShiftRight'])input.run=true;else if(!btnRun.classList.contains('on'))input.run=false;
-  const ix=input.mx+kx, iy=input.my+ky;
+  const ix=((dir.right?1:0)-(dir.left?1:0))+kx, iy=((dir.down?1:0)-(dir.up?1:0))+ky;
   const mag=Math.min(1,Math.hypot(ix,iy));
 
   // --- movement (camera-relative) ---
