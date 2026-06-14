@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhythm · Cockpit</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #151820;
+    --border:   #242838;
+    --muted:    #3a3f52;
+    --text:     #c8cfe0;
+    --dim:      #5a6080;
+    --accent:   #4e7cff;
+    --green:    #3ecf8e;
+    --yellow:   #f0c040;
+    --red:      #f04060;
+    --orange:   #f07840;
+    --purple:   #9060f0;
+    --mono:     'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ─────────────────────────────────────────────────────────────── */
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: #fff;
+  }
+
+  header .badge {
+    font-size: 10px;
+    background: var(--muted);
+    color: var(--dim);
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: .06em;
+  }
+
+  header .as-of {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  main {
+    padding: 20px 24px;
+    display: grid;
+    gap: 20px;
+  }
+
+  /* ── Metric strip ───────────────────────────────────────────────────────── */
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .metric .label { font-size: 10px; color: var(--dim); letter-spacing: .07em; text-transform: uppercase; }
+  .metric .value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: #fff; margin-top: 4px; }
+  .metric .sub   { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  .metric.highlight { border-color: var(--accent); }
+  .metric.ok        { border-color: var(--green); }
+  .metric.warn      { border-color: var(--yellow); }
+
+  /* ── Progress bar ───────────────────────────────────────────────────────── */
+
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .bar { flex: 1; height: 4px; background: var(--muted); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+  .bar-pct { font-size: 10px; font-family: var(--mono); color: var(--dim); min-width: 36px; text-align: right; }
+
+  /* ── Section headers ────────────────────────────────────────────────────── */
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .section-head h2 {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 600;
+  }
+
+  .section-head .count {
+    font-size: 10px;
+    background: var(--muted);
+    color: var(--dim);
+    padding: 1px 6px;
+    border-radius: 99px;
+  }
+
+  /* ── Tables ─────────────────────────────────────────────────────────────── */
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-size: 10px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 600;
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .mono { font-family: var(--mono); font-size: 12px; }
+
+  /* ── Status chips ───────────────────────────────────────────────────────── */
+
+  .chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    padding: 2px 7px;
+    border-radius: 99px;
+    text-transform: uppercase;
+  }
+
+  .chip-green   { background: rgba(62,207,142,.12); color: var(--green); }
+  .chip-yellow  { background: rgba(240,192,64,.12);  color: var(--yellow); }
+  .chip-red     { background: rgba(240,64,96,.12);   color: var(--red); }
+  .chip-orange  { background: rgba(240,120,64,.12);  color: var(--orange); }
+  .chip-purple  { background: rgba(144,96,240,.12);  color: var(--purple); }
+  .chip-blue    { background: rgba(78,124,255,.12);  color: var(--accent); }
+  .chip-dim     { background: var(--muted);          color: var(--dim); }
+
+  /* ── Pending panel ──────────────────────────────────────────────────────── */
+
+  .pending-list { list-style: none; }
+
+  .pending-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .pending-list li:last-child { border-bottom: none; }
+
+  .pending-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .pending-dot.blocker { background: var(--red); }
+
+  /* ── Notes / dim text ───────────────────────────────────────────────────── */
+
+  .note { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .name-cell { font-weight: 500; color: #e0e4f0; }
+  .alias { font-size: 11px; color: var(--dim); }
+  .entities { font-size: 11px; color: var(--dim); }
+
+  /* ── Paused billing warning ─────────────────────────────────────────────── */
+
+  .billing-paused {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--orange);
+    background: rgba(240,120,64,.1);
+    border: 1px solid rgba(240,120,64,.25);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-top: 3px;
+  }
+
+  /* ── Fee cell ───────────────────────────────────────────────────────────── */
+
+  .fee-cell { font-family: var(--mono); }
+  .fee-est  { font-size: 10px; color: var(--dim); }
+
+  /* ── Two-column layout ──────────────────────────────────────────────────── */
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rhythm · Cockpit</h1>
+  <span class="badge">SEED DATA</span>
+  <span class="as-of">Parsed data report · June 10, 2026 · Fees: Jan/Feb vintage — verify before use</span>
+</header>
+
+<main>
+
+  <!-- ── Metric strip ─────────────────────────────────────────────────────── -->
+
+  <div class="metrics" id="metrics"></div>
+
+  <!-- ── Clients + Team side by side ─────────────────────────────────────── -->
+
+  <div>
+    <div class="section-head">
+      <h2>Client Roster</h2>
+      <span class="count" id="client-count"></span>
+    </div>
+    <div class="card">
+      <table id="client-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Fee / mo</th>
+            <th>AM</th>
+            <th>Production</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="section-head">
+        <h2>Team</h2>
+        <span class="count" id="team-count"></span>
+      </div>
+      <div class="card">
+        <table id="team-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Type</th>
+              <th>Pay</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-head">
+        <h2>Pending — §5 List</h2>
+      </div>
+      <div class="card">
+        <ul class="pending-list" id="pending-list"></ul>
+      </div>
+
+      <div style="margin-top:20px">
+        <div class="section-head"><h2>Locked Decisions</h2></div>
+        <div class="card">
+          <ul class="pending-list" id="decisions-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Seed data (inlined from src/seed/) ──────────────────────────────────────
+
+const CONFIG = {
+  monthlyGoal:      150000,
+  marginFloor:      0.50,
+  hiringTriggerPct: 0.85,
+  personnelBase:    25400,
+  platformBase:     6000,
+  revisionCap:      2,
+  deemedApprovalHours: 96,
+  invoicingSyncTarget: 'QuickBooks',
+  feesVerifiedAsOf: null,
+  juneBookedEstimate: 91000,
+};
+
+const TEAM = [
+  { id:'tim-ogrady',         name:'Tim O\'Grady',       role:'Director of Operations',                  appRole:'Leadership',     type:'FTEmployee',    pay:null,                      avail:'FT' },
+  { id:'matt-freedman',      name:'Matt Freedman',      role:'Founder',                                 appRole:'Leadership',     type:'Founder',       pay:'$10K/mo',                 avail:'FT' },
+  { id:'paul-kartelias',     name:'Paul Kartelias',     role:'Senior Account Lead',                     appRole:'AccountManager', type:null,            pay:null,                      avail:null },
+  { id:'sara-weir',          name:'Sara Weir',          role:'AM + Inbound Sales',                      appRole:'AccountManager', type:null,            pay:null,                      avail:null, note:'≈2.5 accounts → full-time sales' },
+  { id:'vince-cravero',      name:'Vince Cravero',      role:'Shooter / Corporate & Linear Editor',     appRole:'Team',           type:'Contractor',    pay:null,                      avail:'Constrained', note:'→ FT Aug 2026' },
+  { id:'austin',             name:'Austin',             role:'Lead Editor (Generalist)',                 appRole:'Team',           type:'PT',            pay:'$17/hr',                  avail:null, note:'Redlined · traveling this week', redlined:true },
+  { id:'dustin-napoli',      name:'Dustin Napoli',      role:'Shooter / Clipper / Audio + Opus Captions',appRole:'Team',          type:'PT',            pay:'$500/wk',                 avail:null },
+  { id:'kaitlyn',            name:'Kaitlyn',            role:'Social Media Mgr + Static Editor',        appRole:'Team',           type:'PT',            pay:'⏳ (from tracker)',        avail:null },
+  { id:'eric',               name:'Eric',               role:'Editor',                                  appRole:'Team',           type:null,            pay:null,                      avail:null },
+  { id:'kartik',             name:'Kartik',             role:'Full-Length Podcast Editor + Ads (Frame.io)',appRole:'Team',         type:'Freelance',     pay:null,                      avail:null },
+  { id:'marko',              name:'Marko',              role:'Media Buyer',                             appRole:'Team',           type:'PT',            pay:null,                      avail:null },
+  { id:'andrew',             name:'Andrew',             role:'Media Buyer',                             appRole:'Team',           type:'PT',            pay:null,                      avail:null },
+  { id:'brian-phillips',     name:'Brian Phillips',     role:'Creative Direction',                      appRole:'Team',           type:'ProjectBased',  pay:null,                      avail:null },
+  { id:'chris',              name:'Chris',              role:'Project-Based',                           appRole:'Team',           type:'ProjectBased',  pay:null,                      avail:null },
+  { id:'troy',               name:'Troy',               role:'Project-Based',                           appRole:'Team',           type:'ProjectBased',  pay:null,                      avail:null },
+];
+
+const CLIENTS = [
+  // Paul
+  { id:'jason-freedman',         name:'Jason Freedman',            fee:7500,   billing:18, am:'paul-kartelias', prod:['austin'],                           status:'active',   churn:null },
+  { id:'calco-designs',          name:'Calco Designs',             fee:10000,  billing:8,  am:'paul-kartelias', prod:[],                                    status:'active',   churn:null },
+  { id:'penn-community-bank',    name:'Penn Community Bank',       fee:6500,   billing:7,  am:'paul-kartelias', prod:['vince-cravero'],                     status:'active',   churn:null },
+  { id:'stark-stark',            name:'Stark & Stark',             fee:3500,   billing:21, am:'paul-kartelias', prod:[],                                    status:'pending',  churn:null, note:'Awaiting signed agreement' },
+  { id:'accredited-roofing',     name:'Accredited Roofing',        fee:2500,   billing:9,  am:'paul-kartelias', prod:[],                                    status:'active',   churn:null },
+  { id:'heritage-landscape',     name:'Heritage Landscape',        fee:2500,   billing:28, am:'paul-kartelias', prod:[],                                    status:'active',   churn:null },
+  { id:'brandon-rost-bemarketing',name:'Brandon Rost / BeMarketing',fee:5000,  billing:null,am:'paul-kartelias',prod:[],                                    status:'active',   churn:null, note:'Ad mgmt' },
+  { id:'anthony-hales',          name:'Anthony Hales',             fee:5000,   billing:7,  am:'paul-kartelias', prod:[],                                    status:'active',   churn:null },
+  { id:'munz-construction',      name:'Munz Construction',         fee:1500,   billing:22, am:'paul-kartelias', prod:['kaitlyn'],                           status:'active',   churn:null },
+  { id:'big-bounce-america',     name:'Big Bounce America',        fee:null,   billing:null,am:'paul-kartelias',prod:['brian-phillips','austin'],            status:'campaign', churn:null, campaign:true, remaining:60000, total:62000, note:'Production paused 6/9; positive-branding pivot' },
+  // Sara
+  { id:'volkmann',               name:'Volkmann',                  fee:2500,   billing:1,  am:'sara-weir',      prod:['vince-cravero','kaitlyn'],            status:'active',   churn:null },
+  { id:'on2-wellness',           name:'On2 Wellness',              fee:5000,   billing:3,  am:'sara-weir',      prod:['austin','kartik'],                   status:'active',   churn:null, adBudget:1500, note:'Ad launch 6/11; Stripe hold' },
+  { id:'chad-blankenbiller',     name:'Chad Blankenbiller',        fee:null,   billing:null,am:'sara-weir',     prod:['kaitlyn','austin'],                  status:'active',   churn:null, aliases:['Chaddy Daddy'], contractEnd:'Dec 2026', note:'Clip backlog; slow approvals' },
+  { id:'modern-aesthetic',       name:'Modern Aesthetic',          fee:null,   billing:null,am:'sara-weir',     prod:['vince-cravero'],                     status:'active',   churn:'high', entities:['Rejuvenation','Plastic Surgery'], note:'M2M · lost month of content · churn risk' },
+  { id:'pat-sanaghan',           name:'Pat Sanaghan',              fee:2500,   billing:null,am:'sara-weir',     prod:[],                                    status:'paused',   churn:null, billingPaused:true, billingPausedReason:'Unsigned SOW; paused ~2 mo', aliases:['A Year of Drinking Whiskey'], note:'6/12 9:30 call · SOP 25 pending Matt' },
+  // Project / Vince-led
+  { id:'stephen-fischer',        name:'Stephen Fischer',           fee:null,   billing:null,am:null,            prod:['vince-cravero'],                     status:'campaign', churn:null, note:'Vampire podcast + museum B-roll due 6/12' },
+  { id:'st-roccos',              name:"St. Rocco's",               fee:null,   billing:null,am:null,            prod:['vince-cravero'],                     status:'active',   churn:null, note:'Not in roster docs · verticals/spots for revision' },
+  { id:'guidelines',             name:'Guidelines',                fee:null,   billing:null,am:null,            prod:['vince-cravero'],                     status:'pending',  churn:null, note:'Not in roster docs · blocked on raw footage' },
+  // Complete / unclear
+  { id:'gear-infusion',          name:'Gear Infusion',             fee:null,   billing:null,am:'sara-weir',     prod:['vince-cravero'],                     status:'complete', churn:null, note:'Complete 6/4' },
+  { id:'timepiece',              name:'Timepiece',                 fee:null,   billing:null,am:null,            prod:['austin'],                            status:'active',   churn:null, note:'In PM doc; status unclear' },
+  { id:'breezy-powerwash',       name:'Breezy Powerwash',          fee:null,   billing:null,am:null,            prod:['austin'],                            status:'active',   churn:null, note:'In PM doc; status unclear' },
+  { id:'jason-fermier',          name:'Jason Fermier',             fee:null,   billing:null,am:null,            prod:['austin'],                            status:'active',   churn:null, note:'In PM doc; status unclear' },
+];
+
+const PENDING = [
+  { text:'Pay rates + real weekly availability for everyone except Austin ($17/hr), Dustin ($500/wk), Matt ($10K/mo). Pull Kaitlyn\'s rate from hours-tracker.', blocker:false },
+  { text:'Current (June) fee per client — all figures are Jan/Feb vintage, stale.', blocker:false },
+  { text:'Tier assignment (Content / Growth / AOR) for every client.', blocker:false },
+  { text:'Production owner for most Paul accounts.', blocker:false },
+  { text:'St. Rocco\'s + Guidelines: fee, AM, contract status — not in any roster doc.', blocker:false },
+  { text:'QuickBooks access — ramp tracker item 7 still To Do; sync target confirmed as QB.', blocker:true },
+  { text:'On-time % source — start manual per brief.', blocker:false },
+  { text:'Fuge SOW file — when located, reconcile against provisional SOW field set in §4.', blocker:false },
+];
+
+const DECISIONS = [
+  { text:'Deemed-approval timer: 96 hours (4 calendar days). Calendar-based, not business-days. Supersedes SOP 5 v1.1. Follow-up: SOP 5 v1.2 + Matt sign-off needed.' },
+  { text:'Fuge SOW unavailable for now. SOW fields are provisional from BUILD BRIEF §4.' },
+  { text:'Kartik = Cardic — single person. Correct name: Kartik. Podcast editing + ads (Frame.io). Off podcast clipping.' },
+  { text:'QuickBooks confirmed as invoicing sync target.' },
+  { text:'All fees flagged as estimate (Jan/Feb vintage) — verify at seed time.' },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const teamById = Object.fromEntries(TEAM.map(t => [t.id, t]));
+
+function fmt(n) {
+  if (n == null) return '<span style="color:var(--dim)">⏳</span>';
+  return '$' + n.toLocaleString();
+}
+
+function statusChip(status, billingPaused, churn) {
+  if (billingPaused) return '<span class="chip chip-orange">Paused</span>';
+  if (churn === 'high') return '<span class="chip chip-red">Churn Risk</span>';
+  const map = {
+    active:   'chip-green',
+    pending:  'chip-yellow',
+    paused:   'chip-orange',
+    complete: 'chip-dim',
+    campaign: 'chip-blue',
+  };
+  const labels = {
+    active:'Active', pending:'Pending', paused:'Paused', complete:'Complete', campaign:'Campaign'
+  };
+  return `<span class="chip ${map[status]||'chip-dim'}">${labels[status]||status}</span>`;
+}
+
+function typeChip(type) {
+  if (!type) return '<span style="color:var(--dim)">⏳</span>';
+  const map = { FTEmployee:'chip-green', Founder:'chip-purple', Contractor:'chip-yellow', PT:'chip-blue', Freelance:'chip-orange', ProjectBased:'chip-dim' };
+  const labels = { FTEmployee:'FT Emp', Founder:'Founder', Contractor:'Contractor', PT:'PT', Freelance:'Freelance', ProjectBased:'Project' };
+  return `<span class="chip ${map[type]||'chip-dim'}">${labels[type]||type}</span>`;
+}
+
+function roleChip(appRole) {
+  const map = { Leadership:'chip-purple', AccountManager:'chip-blue', Team:'chip-dim' };
+  return `<span class="chip ${map[appRole]||'chip-dim'}">${appRole}</span>`;
+}
+
+function prodNames(ids) {
+  if (!ids || !ids.length) return '<span style="color:var(--dim)">⏳</span>';
+  return ids.map(id => teamById[id]?.name || id).join(', ');
+}
+
+function amName(id) {
+  if (!id) return '<span style="color:var(--dim)">⏳</span>';
+  return teamById[id]?.name || id;
+}
+
+// ── Render metrics ────────────────────────────────────────────────────────────
+
+const booked = CONFIG.juneBookedEstimate;
+const goal   = CONFIG.monthlyGoal;
+const pct    = Math.round((booked / goal) * 100);
+const netEst = booked - CONFIG.personnelBase - CONFIG.platformBase;
+const marginEst = netEst / booked;
+
+document.getElementById('metrics').innerHTML = `
+  <div class="metric highlight">
+    <div class="label">Monthly Goal</div>
+    <div class="value">${fmt(goal)}</div>
+    <div class="sub">FY2026 target</div>
+  </div>
+  <div class="metric ${pct >= 85 ? 'ok' : pct >= 60 ? 'warn' : ''}">
+    <div class="label">June Booked (est.)</div>
+    <div class="value">${fmt(booked)}</div>
+    <div class="progress-row">
+      <div class="bar"><div class="bar-fill" style="width:${Math.min(pct,100)}%"></div></div>
+      <div class="bar-pct">${pct}%</div>
+    </div>
+    <div class="sub">vs goal · Blueprint v2</div>
+  </div>
+  <div class="metric ${marginEst >= CONFIG.marginFloor ? 'ok' : 'warn'}">
+    <div class="label">Est. Net Margin</div>
+    <div class="value">${Math.round(marginEst * 100)}%</div>
+    <div class="sub">Floor: ${Math.round(CONFIG.marginFloor * 100)}% · Est. net ${fmt(netEst)}</div>
+  </div>
+  <div class="metric">
+    <div class="label">Hiring Trigger</div>
+    <div class="value">${Math.round(CONFIG.hiringTriggerPct * 100)}%</div>
+    <div class="sub">of goal = ${fmt(Math.round(goal * CONFIG.hiringTriggerPct))}</div>
+  </div>
+  <div class="metric">
+    <div class="label">Deemed Approval</div>
+    <div class="value">${CONFIG.deemedApprovalHours}h</div>
+    <div class="sub">4 calendar days · locked 6/10</div>
+  </div>
+  <div class="metric">
+    <div class="label">Revision Cap</div>
+    <div class="value">${CONFIG.revisionCap}</div>
+    <div class="sub">Per deliverable default</div>
+  </div>
+`;
+
+// ── Render client table ───────────────────────────────────────────────────────
+
+const activeClients = CLIENTS.filter(c => c.status !== 'complete');
+document.getElementById('client-count').textContent = `${activeClients.length} active / ${CLIENTS.length} total`;
+
+const ctbody = document.querySelector('#client-table tbody');
+CLIENTS.forEach(c => {
+  const feeCell = c.campaign
+    ? `<div class="fee-cell">Campaign</div><div class="fee-est">${fmt(c.remaining)} remaining</div>`
+    : `<div class="fee-cell">${fmt(c.fee)}</div>${c.fee ? '<div class="fee-est">est.</div>' : ''}`;
+
+  const aliasHtml = c.aliases ? `<div class="alias">${c.aliases.join(' · ')}</div>` : '';
+  const entitiesHtml = c.entities ? `<div class="entities">${c.entities.join(' + ')}</div>` : '';
+  const pausedHtml = c.billingPaused ? `<div class="billing-paused">⚠ Billing paused</div>` : '';
+  const adHtml = c.adBudget ? `<div class="note">+${fmt(c.adBudget)} ad budget</div>` : '';
+  const noteHtml = c.note ? `<div class="note">${c.note}</div>` : '';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div class="name-cell">${c.name}</div>
+      ${aliasHtml}${entitiesHtml}${pausedHtml}
+    </td>
+    <td>${feeCell}${adHtml}</td>
+    <td>${amName(c.am)}</td>
+    <td>${prodNames(c.prod)}</td>
+    <td>${statusChip(c.status, c.billingPaused, c.churn)}${noteHtml}</td>
+  `;
+  ctbody.appendChild(tr);
+});
+
+// ── Render team table ─────────────────────────────────────────────────────────
+
+document.getElementById('team-count').textContent = `${TEAM.length}`;
+
+const ttbody = document.querySelector('#team-table tbody');
+TEAM.forEach(m => {
+  const payDisplay = m.pay
+    ? `<span class="mono">${m.pay}</span>`
+    : '<span style="color:var(--dim)">⏳</span>';
+  const redlined = m.redlined ? '<span class="chip chip-red" style="margin-left:4px">Redlined</span>' : '';
+  const note = m.note ? `<div class="note">${m.note}</div>` : '';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div class="name-cell">${m.name}${redlined}</div>
+      ${note}
+    </td>
+    <td>${m.role}</td>
+    <td>${typeChip(m.type)} ${roleChip(m.appRole)}</td>
+    <td>${payDisplay}</td>
+  `;
+  ttbody.appendChild(tr);
+});
+
+// ── Render pending items ──────────────────────────────────────────────────────
+
+const pl = document.getElementById('pending-list');
+PENDING.forEach(p => {
+  const li = document.createElement('li');
+  li.innerHTML = `<div class="pending-dot ${p.blocker ? 'blocker' : ''}"></div><div>${p.text}</div>`;
+  pl.appendChild(li);
+});
+
+// ── Render locked decisions ───────────────────────────────────────────────────
+
+const dl = document.getElementById('decisions-list');
+DECISIONS.forEach(d => {
+  const li = document.createElement('li');
+  li.innerHTML = `<div class="pending-dot" style="background:var(--green)"></div><div>${d.text}</div>`;
+  dl.appendChild(li);
+});
+</script>
+</body>
+</html>
