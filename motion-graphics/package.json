@@ -1,0 +1,39 @@
+{
+  "name": "motion-graphics",
+  "version": "1.0.0",
+  "description": "Reusable animated stat reveal template (Remotion)",
+  "repository": {},
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "@remotion/fonts": "4.0.529",
+    "@remotion/zod-types": "4.0.529",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.529",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.529",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "render": "npm run render:vertical && npm run render:horizontal && npm run render:alpha && npm run render:alpha:horizontal",
+    "render:vertical": "remotion render StatReveal-Vertical out/stat-reveal-vertical.mp4",
+    "render:horizontal": "remotion render StatReveal-Horizontal out/stat-reveal-horizontal.mp4",
+    "render:alpha": "remotion render StatReveal-Vertical-Alpha out/stat-reveal-vertical-alpha.mov --image-format=png --pixel-format=yuva444p10le --codec=prores --prores-profile=4444",
+    "render:alpha:horizontal": "remotion render StatReveal-Horizontal-Alpha out/stat-reveal-horizontal-alpha.mov --image-format=png --pixel-format=yuva444p10le --codec=prores --prores-profile=4444"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}
