@@ -1,0 +1,66 @@
+---
+import { Picture } from 'astro:assets';
+import Layout from '../layouts/Layout.astro';
+import EntryGrid from '../components/EntryGrid.astro';
+import CategoryTile from '../components/CategoryTile.astro';
+import logo from '../assets/chomp-approved.png';
+import { getApprovals } from '../lib/approvals';
+import { categories } from '../lib/categories';
+
+const approvals = await getApprovals();
+const recent = approvals.slice(0, 6);
+const countFor = (slug: string) => approvals.filter((a) => a.data.category === slug).length;
+---
+
+<Layout>
+  <section class="relative overflow-hidden border-b-4 border-ink bg-chomp-yellow">
+    <!-- sunburst behind the logo -->
+    <div
+      class="pointer-events-none absolute inset-0 opacity-40"
+      aria-hidden="true"
+      style="background: repeating-conic-gradient(from 0deg at 50% 42%, #fff 0deg 9deg, transparent 9deg 18deg);"
+    >
+    </div>
+    <div class="relative mx-auto max-w-6xl px-4 pt-6 pb-12 sm:pt-10 sm:pb-16 flex flex-col items-center text-center">
+      <h1 class="sr-only">Chomp Approved!</h1>
+      <Picture
+        src={logo}
+        alt="CHOMP APPROVED! — Remy giving a big thumbs up"
+        widths={[320, 480, 640, 800]}
+        sizes="(min-width: 640px) 440px, 82vw"
+        formats={['avif', 'webp']}
+        fallbackFormat="webp"
+        loading="eager"
+        fetchpriority="high"
+        class="w-[82vw] max-w-[440px] h-auto drop-shadow-[6px_10px_0_rgb(20_20_20/0.2)]"
+      />
+      <p class="mt-4 max-w-xl text-xl sm:text-2xl font-display font-semibold leading-snug">
+        The official list of places, people, and things that Remy approves of.
+        <span class="block mt-1 text-base sm:text-lg font-medium">No stars. No scores. If it’s here, it’s Chomp Approved!</span>
+      </p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href="/all/" class="btn bg-chomp-red text-white">See all approvals</a>
+        <a href="/got-a-sticker/" class="btn bg-white">Got a sticker? 🎉</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 pt-12" aria-labelledby="recent-heading">
+    <div class="mb-6 flex items-end justify-between gap-4">
+      <h2 id="recent-heading" class="text-3xl sm:text-4xl">
+        <span aria-hidden="true">🆕</span> Recently Approved
+      </h2>
+      <a href="/all/" class="font-display font-semibold whitespace-nowrap hover:text-chomp-red">See all →</a>
+    </div>
+    <EntryGrid entries={recent} />
+  </section>
+
+  <section id="categories" class="mx-auto max-w-6xl px-4 pt-16 scroll-mt-20" aria-labelledby="categories-heading">
+    <h2 id="categories-heading" class="mb-6 text-3xl sm:text-4xl">
+      <span aria-hidden="true">🗂️</span> Browse by Category
+    </h2>
+    <div class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+      {categories.map((c) => <CategoryTile category={c} count={countFor(c.slug)} />)}
+    </div>
+  </section>
+</Layout>

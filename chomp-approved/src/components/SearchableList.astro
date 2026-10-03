@@ -1,0 +1,112 @@
+---
+// A search box (plus optional category filter chips) over a grid of entries.
+// Works without JavaScript too: everything is simply shown.
+import EntryGrid from './EntryGrid.astro';
+import { categories, categoryStyle } from '../lib/categories';
+import type { Approval } from '../lib/approvals';
+
+interface Props {
+  entries: Approval[];
+  showChips?: boolean;
+  placeholder?: string;
+  label?: string;
+}
+
+const { entries, showChips = true, placeholder = 'Search approvals…', label = 'Search approvals' } = Astro.props;
+const counts = new Map<string, number>();
+for (const e of entries) counts.set(e.data.category, (counts.get(e.data.category) ?? 0) + 1);
+const chipCategories = categories.filter((c) => counts.has(c.slug));
+const chipClass =
+  'chip inline-flex items-center gap-1.5 rounded-full border-[3px] border-ink bg-white px-3 py-1.5 font-display font-semibold whitespace-nowrap cursor-pointer transition-colors hover:bg-cat/40 aria-pressed:bg-cat aria-pressed:shadow-[0_3px_0_var(--color-ink)]';
+---
+
+<div data-searchable>
+  <form role="search" class="relative mb-5" onsubmit="return false">
+    <label for="search" class="sr-only">{label}</label>
+    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl" aria-hidden="true">🔎</span>
+    <input
+      id="search"
+      type="search"
+      autocomplete="off"
+      placeholder={placeholder}
+      class="w-full rounded-full border-[3px] border-ink bg-white py-3.5 pl-12 pr-4 text-lg font-medium shadow-[0_5px_0_var(--color-ink)] placeholder:text-ink/45 focus:outline-none focus:ring-4 focus:ring-chomp-blue"
+      data-search-input
+    />
+  </form>
+
+  {
+    showChips && (
+      <div
+        class="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        role="group"
+        aria-label="Filter by category"
+      >
+        <button type="button" class={chipClass} style="--cat: var(--color-chomp-yellow)" data-chip="" aria-pressed="true">
+          ✅ All <span class="text-ink/60">{entries.length}</span>
+        </button>
+        {chipCategories.map((c) => (
+          <button type="button" class={chipClass} style={categoryStyle(c)} data-chip={c.slug} aria-pressed="false">
+            <span aria-hidden="true">{c.emoji}</span>
+            {c.name} <span class="text-ink/60">{counts.get(c.slug)}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <p class="mb-4 font-display font-semibold text-ink/70" aria-live="polite" data-result-count>
+    {entries.length} {entries.length === 1 ? 'approval' : 'approvals'}
+  </p>
+
+  <EntryGrid entries={entries} />
+
+  <div class="hidden sticker mx-auto max-w-md p-6 text-center" data-empty>
+    <p class="text-5xl" aria-hidden="true">🤔</p>
+    <p class="mt-2 font-display text-xl font-bold">Nothing matches that… yet!</p>
+    <p class="mt-1 text-ink/75"><slot name="empty">Try a different word, or check back soon. Remy is always approving new stuff.</slot></p>
+  </div>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-searchable]')) {
+    const input = root.querySelector<HTMLInputElement>('[data-search-input]')!;
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-chip]')];
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-entry]')];
+    const count = root.querySelector<HTMLElement>('[data-result-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+
+    const params = new URLSearchParams(location.search);
+    let category = params.get('cat') ?? '';
+    if (!chips.some((c) => c.dataset.chip === category)) category = '';
+    input.value = params.get('q') ?? '';
+
+    const update = () => {
+      const words = input.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      for (const card of cards) {
+        const matches =
+          (!category || card.dataset.category === category) &&
+          words.every((w) => card.dataset.search!.includes(w));
+        card.hidden = !matches;
+        if (matches) shown++;
+      }
+      for (const chip of chips) chip.setAttribute('aria-pressed', String(chip.dataset.chip === category));
+      count.textContent = `${shown} ${shown === 1 ? 'approval' : 'approvals'}`;
+      empty.classList.toggle('hidden', shown > 0);
+
+      const url = new URL(location.href);
+      input.value ? url.searchParams.set('q', input.value) : url.searchParams.delete('q');
+      category ? url.searchParams.set('cat', category) : url.searchParams.delete('cat');
+      history.replaceState(null, '', url);
+    };
+
+    input.addEventListener('input', update);
+    for (const chip of chips) {
+      chip.addEventListener('click', () => {
+        category = chip.dataset.chip ?? '';
+        update();
+      });
+    }
+    update();
+  }
+</script>

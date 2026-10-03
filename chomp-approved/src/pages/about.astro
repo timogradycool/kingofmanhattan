@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import Badge from '../components/Badge.astro';
+
+const steps = [
+  { emoji: '🧐', title: 'Remy tries it', text: 'A restaurant, a park, a book, a person, a really good puddle. Anything goes.' },
+  { emoji: '👍', title: 'Remy decides', text: 'It’s a yes or it isn’t. There’s no in-between, and no star ratings.' },
+  { emoji: '🏷️', title: 'Sticker time', text: 'If it’s a place or a person, we hand over an official CHOMP APPROVED! sticker.' },
+  { emoji: '🌐', title: 'It goes on the site', text: 'Every approval gets its own listing here, with Remy’s reason in his own words.' },
+];
+---
+
+<Layout title="About" description="What Chomp Approved is, and how Remy decides what makes the list.">
+  <PageHeader title="About" emoji="👋" color="var(--color-chomp-green)">
+    <p>Hi! This is Remy’s official list of approved stuff.</p>
+  </PageHeader>
+
+  <div class="mx-auto max-w-3xl px-4 pt-10">
+    <div class="sticker p-6 sm:p-8 text-lg leading-relaxed space-y-4">
+      <p>
+        Remy is a kid with strong opinions and a big appetite for fun. When something makes him truly happy (a
+        perfect slice of pizza, a playground with a ridiculously fast slide, a crossing guard who knows everyone’s
+        name), it earns his highest honor: <strong>Chomp Approved!</strong>
+      </p>
+      <p>
+        This is a small, family-run project. We started it to celebrate the people and places that make our days
+        better, and to give them a little thank-you they can stick on the window.
+      </p>
+      <p class="flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-chomp-yellow/40 px-4 py-3 font-display font-semibold">
+        <Badge size={48} />
+        No stars. No scores. If it’s on this site, it’s Chomp Approved.
+      </p>
+    </div>
+
+    <h2 class="mt-14 mb-6 text-3xl sm:text-4xl">How it works</h2>
+    <ol class="grid gap-5 sm:grid-cols-2">
+      {
+        steps.map((s, i) => (
+          <li class="sticker tilt-hover p-5">
+            <p class="flex items-center gap-3">
+              <span class="grid size-10 place-items-center rounded-full border-[3px] border-ink bg-chomp-yellow font-display font-bold">
+                {i + 1}
+              </span>
+              <span class="text-3xl" aria-hidden="true">{s.emoji}</span>
+            </p>
+            <h3 class="mt-3 text-2xl">{s.title}</h3>
+            <p class="mt-1 leading-snug">{s.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="mt-12 flex flex-wrap gap-3">
+      <a href="/all/" class="btn bg-chomp-blue text-white">See everything Remy approves</a>
+      <a href="/got-a-sticker/" class="btn bg-white">Got a sticker?</a>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,148 @@
+---
+import '../styles/global.css';
+import { Image } from 'astro:assets';
+import logo from '../assets/chomp-approved.png';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'The official list of places, people, and things Remy approves of. If it’s on this site, it’s Chomp Approved!',
+} = Astro.props;
+
+const fullTitle = title ? `${title} · Chomp Approved!` : 'Chomp Approved! · Remy’s official seal of approval';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og-image.jpg', Astro.site);
+
+const nav = [
+  { href: '/', label: 'Home' },
+  { href: '/all/', label: 'All Approvals' },
+  { href: '/got-a-sticker/', label: 'Got a Sticker?' },
+  { href: '/about/', label: 'About' },
+];
+const path = Astro.url.pathname.replace(/\/?$/, '/');
+const isCurrent = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#ffdd03" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Chomp Approved!" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 btn bg-chomp-yellow"
+      >Skip to content</a
+    >
+
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b-4 border-ink">
+      <div class="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-2 no-underline" aria-label="Chomp Approved! home">
+          <Image src={logo} alt="" width={52} densities={[1, 2]} class="size-[52px] -my-1" loading="eager" />
+          <span class="font-display font-bold text-xl tracking-tight hidden min-[380px]:inline">
+            <span class="text-chomp-red">Chomp</span>{' '}<span class="text-ink">Approved!</span>
+          </span>
+        </a>
+
+        <nav aria-label="Main" class="hidden md:block">
+          <ul class="flex items-center gap-1">
+            {
+              nav.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    aria-current={isCurrent(item.href) ? 'page' : undefined}
+                    class="px-3 py-2 rounded-full font-display font-semibold no-underline hover:bg-chomp-yellow/60 aria-[current=page]:bg-chomp-yellow aria-[current=page]:ring-2 aria-[current=page]:ring-ink"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <details class="md:hidden relative group">
+          <summary
+            class="list-none cursor-pointer select-none btn !min-h-11 !px-4 !py-1 !text-base bg-chomp-yellow [&::-webkit-details-marker]:hidden"
+          >
+            <span class="group-open:hidden">Menu</span>
+            <span class="hidden group-open:inline">Close</span>
+          </summary>
+          <nav
+            aria-label="Main"
+            class="absolute right-0 mt-3 w-60 sticker p-2 flex flex-col"
+          >
+            {
+              nav.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={isCurrent(item.href) ? 'page' : undefined}
+                  class="px-4 py-3 rounded-xl font-display font-semibold text-lg no-underline hover:bg-chomp-yellow/50 aria-[current=page]:bg-chomp-yellow"
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="mt-16 border-t-4 border-ink bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-8 flex flex-col sm:flex-row gap-6 sm:items-center justify-between">
+        <div class="flex items-center gap-3">
+          <Image src={logo} alt="" width={64} densities={[1, 2]} class="size-16" />
+          <p class="max-w-sm text-sm leading-snug">
+            <strong class="font-display text-base">No stars. No scores.</strong><br />
+            If it’s on this site, Remy said yes. That makes it Chomp Approved!
+          </p>
+        </div>
+        <ul class="flex flex-wrap gap-x-5 gap-y-2 font-display font-semibold">
+          {nav.map((item) => <li><a href={item.href} class="hover:text-chomp-red">{item.label}</a></li>)}
+        </ul>
+      </div>
+    </footer>
+
+    <script>
+      // Close the mobile menu after tapping a link or tapping outside it.
+      const menu = document.querySelector('header details');
+      document.addEventListener('click', (e) => {
+        if (menu?.hasAttribute('open') && !menu.contains(e.target as Node)) menu.removeAttribute('open');
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+[
+  { "slug": "restaurants", "name": "Restaurants", "emoji": "🍕", "color": "red", "blurb": "Places where the food is so good Remy cleans his plate." },
+  { "slug": "snacks-and-treats", "name": "Snacks & Treats", "emoji": "🍿", "color": "orange", "blurb": "Crunchy, salty, sweet, and everything in between." },
+  { "slug": "desserts-and-ice-cream", "name": "Desserts & Ice Cream", "emoji": "🍦", "color": "blue", "blurb": "Scoops, sprinkles, frosting, and other very serious business." },
+  { "slug": "parks-and-playgrounds", "name": "Parks & Playgrounds", "emoji": "🛝", "color": "green", "blurb": "Slides, swings, and the best places to run around." },
+  { "slug": "places-to-visit", "name": "Places to Visit", "emoji": "🏰", "color": "yellow", "blurb": "Museums, attractions, and day trips worth the car ride." },
+  { "slug": "stores-and-shops", "name": "Stores & Shops", "emoji": "🛍️", "color": "red", "blurb": "Shops where Remy could happily spend all day looking around." },
+  { "slug": "toys", "name": "Toys", "emoji": "🧸", "color": "orange", "blurb": "The toys that actually get played with." },
+  { "slug": "games-and-video-games", "name": "Games & Video Games", "emoji": "🎮", "color": "blue", "blurb": "Board games, card games, and video games with the Remy seal." },
+  { "slug": "books", "name": "Books", "emoji": "📚", "color": "green", "blurb": "Books Remy wants to read again. And again. And again." },
+  { "slug": "movies-and-shows", "name": "Movies & Shows", "emoji": "🎬", "color": "yellow", "blurb": "Movies and shows worth the popcorn." },
+  { "slug": "music", "name": "Music", "emoji": "🎵", "color": "red", "blurb": "Songs, bands, and instruments that make Remy dance." },
+  { "slug": "animals-and-pets", "name": "Animals & Pets", "emoji": "🐶", "color": "orange", "blurb": "Very good dogs, cats, goats, and other critters." },
+  { "slug": "sports-and-activities", "name": "Sports & Activities", "emoji": "⚽", "color": "blue", "blurb": "Ways to jump, kick, throw, splash, and zoom." },
+  { "slug": "events", "name": "Events", "emoji": "🎉", "color": "green", "blurb": "Festivals, parties, shows, and special days." },
+  { "slug": "people", "name": "People", "emoji": "🙌", "color": "yellow", "blurb": "Awesome humans who made Remy's day better." },
+  { "slug": "random-awesome-stuff", "name": "Random Awesome Stuff", "emoji": "✨", "color": "red", "blurb": "Things that don't fit anywhere else but are too great to leave out." }
+]

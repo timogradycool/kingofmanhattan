@@ -1,0 +1,8 @@
+# Netlify: set "Base directory" to chomp-approved in the site settings
+# (only needed because this site lives in a subfolder of the repo).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

@@ -1,0 +1,21 @@
+---
+interface Props {
+  title: string;
+  emoji?: string;
+  /** CSS color for the header band. */
+  color?: string;
+}
+const { title, emoji, color = 'var(--color-chomp-yellow)' } = Astro.props;
+---
+
+<section class="border-b-4 border-ink" style={`background:${color}`}>
+  <div class="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+    <h1 class="outline-text text-4xl sm:text-6xl flex flex-wrap items-center gap-3">
+      {emoji && <span class="[-webkit-text-stroke:0] drop-shadow-[3px_4px_0_rgb(20_20_20/0.3)]" aria-hidden="true">{emoji}</span>}
+      {title}
+    </h1>
+    <div class="mt-3 max-w-2xl text-lg sm:text-xl font-medium">
+      <slot />
+    </div>
+  </div>
+</section>

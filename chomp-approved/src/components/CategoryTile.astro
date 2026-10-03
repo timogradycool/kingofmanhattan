@@ -1,0 +1,22 @@
+---
+import { categoryStyle, type Category } from '../lib/categories';
+
+interface Props {
+  category: Category;
+  count: number;
+}
+
+const { category, count } = Astro.props;
+---
+
+<a
+  href={`/category/${category.slug}/`}
+  style={categoryStyle(category)}
+  class="sticker tilt-hover !bg-cat flex flex-col items-center justify-center gap-1 px-3 py-5 text-center no-underline min-h-36"
+>
+  <span class="text-5xl drop-shadow-[2px_3px_0_rgb(20_20_20/0.25)]" aria-hidden="true">{category.emoji}</span>
+  <span class="outline-text font-display font-bold text-xl leading-tight">{category.name}</span>
+  <span class="rounded-full bg-white border-2 border-ink px-2 text-xs font-bold">
+    {count} {count === 1 ? 'approval' : 'approvals'}
+  </span>
+</a>

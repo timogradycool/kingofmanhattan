@@ -1,0 +1,62 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import EntryGrid from '../../components/EntryGrid.astro';
+import Badge from '../../components/Badge.astro';
+import { getApprovals } from '../../lib/approvals';
+import { categories, categoryColor, type Category } from '../../lib/categories';
+
+export function getStaticPaths() {
+  return categories.map((category) => ({ params: { slug: category.slug }, props: { category } }));
+}
+
+interface Props {
+  category: Category;
+}
+
+const { category } = Astro.props;
+const entries = await getApprovals((e) => e.data.category === category.slug);
+const otherCategories = categories.filter((c) => c.slug !== category.slug);
+---
+
+<Layout title={category.name} description={`${category.name} that Remy approves of. ${category.blurb ?? ''}`}>
+  <PageHeader title={category.name} emoji={category.emoji} color={categoryColor(category)}>
+    {category.blurb && <p>{category.blurb}</p>}
+    <p class="mt-3 inline-flex items-center gap-2 rounded-full border-[3px] border-ink bg-white px-3 py-1 text-base font-display font-semibold">
+      <Badge size={28} />
+      {entries.length} Chomp Approved {entries.length === 1 ? 'pick' : 'picks'}
+    </p>
+  </PageHeader>
+
+  <div class="mx-auto max-w-6xl px-4 pt-10">
+    {
+      entries.length > 0 ? (
+        <EntryGrid entries={entries} showCategory={false} />
+      ) : (
+        <div class="sticker mx-auto max-w-md p-6 text-center">
+          <p class="text-5xl" aria-hidden="true">{category.emoji}</p>
+          <p class="mt-2 font-display text-xl font-bold">Nothing here yet!</p>
+          <p class="mt-1 text-ink/75">Remy hasn’t approved anything in this category so far. Stay tuned.</p>
+        </div>
+      )
+    }
+
+    <h2 class="mt-16 mb-4 text-2xl">More categories</h2>
+    <ul class="flex flex-wrap gap-2">
+      {
+        otherCategories.map((c) => (
+          <li>
+            <a
+              href={`/category/${c.slug}/`}
+              style={`--cat:${categoryColor(c)}`}
+              class="inline-flex items-center gap-1.5 rounded-full border-[3px] border-ink bg-white px-3 py-1.5 font-display font-semibold no-underline hover:bg-cat"
+            >
+              <span aria-hidden="true">{c.emoji}</span>
+              {c.name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Layout>

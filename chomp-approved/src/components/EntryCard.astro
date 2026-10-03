@@ -1,0 +1,70 @@
+---
+import { Image } from 'astro:assets';
+import Badge from './Badge.astro';
+import CategoryChip from './CategoryChip.astro';
+import { approvalUrl, formatDate, isoDate, type Approval } from '../lib/approvals';
+import { categoryStyle, getCategory } from '../lib/categories';
+
+interface Props {
+  entry: Approval;
+  /** Show the category chip (hide it on category pages, where it's obvious). */
+  showCategory?: boolean;
+}
+
+const { entry, showCategory = true } = Astro.props;
+const { name, remyQuote, dateApproved, photo, photoAlt, location, stickerAwarded, placeholder } = entry.data;
+const category = getCategory(entry.data.category);
+const searchText = [name, location, remyQuote, category.name].filter(Boolean).join(' ').toLowerCase();
+---
+
+<article
+  class="sticker tilt-hover relative flex flex-col overflow-hidden"
+  style={categoryStyle(category)}
+  data-entry
+  data-category={category.slug}
+  data-search={searchText}
+>
+  <div class="relative aspect-[16/9] sm:aspect-[4/3] -m-[6px] mb-0 border-b-[3px] border-ink overflow-hidden rounded-t-[1.25rem] bg-cat">
+    {
+      photo ? (
+        <Image
+          src={photo}
+          alt={photoAlt ?? name}
+          widths={[360, 560, 800]}
+          sizes="(min-width: 1024px) 360px, (min-width: 640px) 45vw, 92vw"
+          class="size-full object-cover"
+        />
+      ) : (
+        <div class="size-full grid place-items-center" aria-hidden="true">
+          <span class="text-7xl drop-shadow-[3px_4px_0_rgb(20_20_20/0.25)]">{category.emoji}</span>
+        </div>
+      )
+    }
+    {placeholder && <span class="placeholder-tag absolute top-2 left-2">Placeholder</span>}
+    {
+      stickerAwarded && (
+        <span class="absolute top-2 right-2 rounded-full border-2 border-ink bg-white px-2 py-0.5 text-xs font-display font-bold">
+          Sticker awarded ✓
+        </span>
+      )
+    }
+  </div>
+
+  <div class="flex flex-1 flex-col gap-2 p-4 pt-3">
+    <h3 class="flex items-start gap-2 text-xl sm:text-[1.35rem]">
+      <Badge size={38} class="-mt-0.5" />
+      <a href={approvalUrl(entry)} class="no-underline hover:underline after:absolute after:inset-0 after:content-['']">
+        {name}
+      </a>
+    </h3>
+
+    {showCategory && <div><CategoryChip slug={category.slug} link={false} /></div>}
+
+    {remyQuote && <p class="font-display font-medium leading-snug text-ink/85">“{remyQuote}”</p>}
+
+    <p class="mt-auto pt-1 text-sm text-ink/65 font-medium">
+      Approved <time datetime={isoDate(dateApproved)}>{formatDate(dateApproved)}</time>
+      {location && <> · {location}</>}
+    </p>
+  </div>
+</article>

@@ -1,0 +1,15 @@
+---
+import EntryCard from './EntryCard.astro';
+import type { Approval } from '../lib/approvals';
+
+interface Props {
+  entries: Approval[];
+  showCategory?: boolean;
+}
+
+const { entries, showCategory = true } = Astro.props;
+---
+
+<div class="grid gap-7 sm:grid-cols-2 lg:grid-cols-3" data-entry-grid>
+  {entries.map((entry) => <EntryCard entry={entry} showCategory={showCategory} />)}
+</div>
